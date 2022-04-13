@@ -1074,7 +1074,7 @@ def rpn_bbox_loss_graph(config, target_bbox, rpn_match, rpn_bbox):
 
 
 def mrcnn_class_loss_graph(target_class_ids, pred_class_logits,
-                           active_class_ids):
+                           active_class_ids, class_weight):
     """Loss for the classifier head of Mask RCNN.
 
     target_class_ids: [batch, num_rois]. Integer class IDs. Uses zero
@@ -1102,10 +1102,23 @@ def mrcnn_class_loss_graph(target_class_ids, pred_class_logits,
     # Erase losses of predictions of classes that are not in the active
     # classes of the image.
     loss = loss * pred_active
+    class_weight[0] = 1.0
+    list_weights = []  # np.zeros(loss.shape[-1])
+    for idx in range(0, len(class_weight)):
+        list_weights.append(class_weight[idx])
+    list_weights = tf.convert_to_tensor([list_weights])
+
+    weights_ = tf.reduce_sum(list_weights * active_class_ids, axis=1)
+
+    weighted_losses = loss * weights_
+    # reduce the result to get your final loss
+    loss = tf.reduce_mean(weighted_losses)
+
+    # loss=tf.math.multiply(loss[-1,-1],list_weights)
 
     # Computer loss mean. Use only predictions that contribute
     # to the loss to get a correct mean.
-    loss = tf.reduce_sum(loss) / tf.reduce_sum(pred_active)
+    loss = tf.reduce_sum(input_tensor=loss) / tf.reduce_sum(input_tensor=pred_active)
     return loss
 
 
@@ -2012,7 +2025,7 @@ class MaskRCNN():
             rpn_bbox_loss = KL.Lambda(lambda x: rpn_bbox_loss_graph(config, *x), name="rpn_bbox_loss")(
                 [input_rpn_bbox, input_rpn_match, rpn_bbox])
             class_loss = KL.Lambda(lambda x: mrcnn_class_loss_graph(*x), name="mrcnn_class_loss")(
-                [target_class_ids, mrcnn_class_logits, active_class_ids])
+                [target_class_ids, mrcnn_class_logits, active_class_ids,config.CLASS_WEIGHTS])
             bbox_loss = KL.Lambda(lambda x: mrcnn_bbox_loss_graph(*x), name="mrcnn_bbox_loss")(
                 [target_bbox, target_class_ids, mrcnn_bbox])
             mask_loss = KL.Lambda(lambda x: mrcnn_mask_loss_graph(*x), name="mrcnn_mask_loss")(
