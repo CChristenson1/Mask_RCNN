@@ -1,13 +1,12 @@
+import json
 import os
 import os.path as osp
-import json
-import numpy as np
 from argparse import ArgumentParser
-from skimage.measure import regionprops
+
+import numpy as np
 from PIL import Image
-
-
 from segments import SegmentsClient, SegmentsDataset
+from skimage.measure import regionprops
 
 
 def write_annotations(dataset, output_dir):
@@ -233,7 +232,7 @@ def main():
     dataset = SegmentsDataset(
         release, filter_by=args.filter, segments_dir=args.output_dir
     )
-    if args.filter == "labeled":
+    if args.filter in ["labeled", "reviewed"]:
         dataset_folder = args.dataset_name.replace("/", "_")
         img_dir = osp.join(args.output_dir, dataset_folder, args.release_version)
         write_annotations(dataset, img_dir)

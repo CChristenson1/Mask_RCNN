@@ -598,7 +598,7 @@ def detect(model, dataset_dir, subset, split_num):
         # Split the Image with an overlap
         # Determine the subdividsion of the splits, based on number of splits wanted.
         # The splits will be a list of set of two numbers, the lower and upper bounds of the splits.
-        splits = get_splits(image.shape[1], split_num, 20)
+        splits = get_splits(image.shape[1], split_num, 50)
 
         # Actually split the image into the subdivision determined earlier
         split_images = spliting_image(image, splits)
@@ -644,7 +644,7 @@ def detect(model, dataset_dir, subset, split_num):
         # Save preditions bitmap and annotation.json
         segmentation_bitmap, annotations = convert_to_bitmap(image, output_result)
         f = f"{image_name}_pred_label.png"
-        osp.join(dataset_dir, f)
+        f = osp.join(dataset_dir, f)
         Image.fromarray(segmentation_bitmap).save(f, "PNG")
         predictions_data.append({"image_name": image_name, "class_ids": annotations})
 
